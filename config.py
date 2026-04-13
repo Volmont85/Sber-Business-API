@@ -12,7 +12,18 @@ class Config:
 
     ACCOUNT_ID = os.getenv("SBER_ACCOUNT")
 
-    REDIS_URL = os.getenv("REDIS_URL")
-
     TG_TOKEN = os.getenv("TG_TOKEN")
     TG_CHAT_ID = os.getenv("TG_CHAT_ID")
+
+    REDIS_URL = os.getenv("REDIS_URL")
+
+    BALANCE_THRESHOLD = 1_300_000
+    RESERVE_AMOUNT = 300_000
+
+    MOSCOW_TZ = "Europe/Moscow"
+
+    RUN_HOUR = 17
+    RUN_MINUTE = 0
+
+    CUT_OFF_HOUR = 18
+    CUT_OFF_MINUTE = 0
