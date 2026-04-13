@@ -1,14 +1,22 @@
-import requests
+import httpx
 
+class TelegramLogger:
 
-def send_message(token, chat_id, text):
+    def __init__(self, token, chat_id):
 
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
+        self.url = f"https://api.telegram.org/bot{token}/sendMessage"
+        self.chat_id = chat_id
 
-    requests.post(
-        url,
-        json={
-            "chat_id": chat_id,
-            "text": text
-        }
-    )
+    def send(self, text):
+
+        try:
+            httpx.post(
+                self.url,
+                json={
+                    "chat_id": self.chat_id,
+                    "text": text
+                },
+                timeout=10
+            )
+        except Exception:
+            pass
