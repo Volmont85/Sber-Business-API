@@ -1,38 +1,45 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
-import pytz
 
 from config import Config
 from sber_client import SberClient
+from overnight_service import OvernightService
 from storage import Storage
-from overnight_service import run
+from telegram_logger import TelegramLogger
 
-
-cfg = Config()
+config = Config()
 
 sber = SberClient(
-    cfg.SBER_API,
-    cfg.CLIENT_ID,
-    cfg.CLIENT_SECRET,
-    cfg.CERT_PATH,
-    cfg.KEY_PATH
+    config.SBER_API,
+    config.CLIENT_ID,
+    config.CLIENT_SECRET,
+    config.CERT_PATH,
+    config.KEY_PATH
 )
 
-storage = Storage(cfg.REDIS_URL)
+storage = Storage(config.REDIS_URL)
+
+logger = TelegramLogger(
+    config.TG_TOKEN,
+    config.TG_CHAT_ID
+)
+
+service = OvernightService(
+    config,
+    sber,
+    storage,
+    logger
+)
 
 scheduler = BlockingScheduler(
-    timezone=pytz.timezone("Europe/Moscow")
+    timezone=config.MOSCOW_TZ
 )
 
-
-@scheduler.scheduled_job(
+scheduler.add_job(
+    service.run,
     "cron",
     day_of_week="mon-fri",
-    hour=17,
-    minute=0
+    hour=config.RUN_HOUR,
+    minute=config.RUN_MINUTE
 )
-def job():
-
-    run(cfg, sber, storage)
-
 
 scheduler.start()
