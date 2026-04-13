@@ -1,46 +1,130 @@
 from datetime import datetime
-from telegram_logger import send_message
+import pytz
+import time
 
+class OvernightService:
 
-MIN_BALANCE = 1_300_000
-RESERVE = 300_000
+    def __init__(self, config, sber, storage, logger):
 
+        self.config = config
+        self.sber = sber
+        self.storage = storage
+        self.logger = logger
 
-def run(cfg, sber, storage):
+    def run(self):
 
-    if not storage.lock_today():
-        return
+        tz = pytz.timezone(self.config.MOSCOW_TZ)
+        now = datetime.now(tz)
 
-    token = sber.get_token()
+        cut_off = now.replace(
+            hour=self.config.CUT_OFF_HOUR,
+            minute=self.config.CUT_OFF_MINUTE,
+            second=0
+        )
 
-    balance = sber.get_balance(token, cfg.ACCOUNT_ID)
+        if now > cut_off:
+            self.logger.send("❌ Cut‑off passed. Deposit skipped.")
+            return
 
-    if balance <= MIN_BALANCE:
-        return
+        if self.storage.already_completed():
+            self.logger.send("⚠️ Overnight already completed today")
+            return
 
-    amount = balance - RESERVE
+        if not self.storage.acquire_lock():
+            self.logger.send("⚠️ Another process is already running")
+            return
 
-    rate = sber.get_interest_rate(token, amount)
+        try:
 
-    external_id = "overnight-" + datetime.now().strftime("%Y%m%d")
+            token = self.sber.get_token()
 
-    result = sber.create_deposit(
-        token,
-        amount,
-        rate,
-        external_id
-    )
+            balance = self.sber.get_balance(
+                token,
+                self.config.ACCOUNT_ID
+            )
 
-    message = f"""
-Overnight создан
+            self.logger.send(f"Баланс: {balance:,.0f} ₽")
 
-Сумма: {amount}
-Ставка: {rate}
-ID: {external_id}
-"""
+            if balance <= self.config.BALANCE_THRESHOLD:
 
-    send_message(
-        cfg.TG_TOKEN,
-        cfg.TG_CHAT_ID,
-        message
-    )
+                self.logger.send("Баланс ниже порога")
+                return
+
+            amount = balance - self.config.RESERVE_AMOUNT
+
+            external_id = self.storage.get_external_id()
+
+            rate = self.sber.get_interest_rate(token, amount)
+
+            if not self.storage.application_created():
+
+                try:
+
+                    self.sber.create_deposit(
+                        token,
+                        amount,
+                        rate,
+                        external_id
+                    )
+
+                    self.storage.mark_application_created()
+
+                except Exception:
+
+                    self.logger.send("Ставка изменилась. Пробуем получить новую.")
+
+                    rate = self.sber.get_interest_rate(token, amount)
+
+                    self.sber.create_deposit(
+                        token,
+                        amount,
+                        rate,
+                        external_id
+                    )
+
+                    self.storage.mark_application_created()
+
+            self.logger.send(
+                f"Заявка отправлена\n"
+                f"Сумма {amount:,.0f}\n"
+                f"Ставка {rate}%"
+            )
+
+            for _ in range(10):
+
+                state = self.sber.get_application_state(
+                    token,
+                    external_id
+                )
+
+                status = state.get("state")
+
+                if status in ["ACCEPTED", "PLACED"]:
+
+                    self.storage.mark_completed()
+
+                    self.logger.send(
+                        f"✅ Overnight размещен\n"
+                        f"Статус {status}"
+                    )
+
+                    return
+
+                if status in ["REJECTED", "FAILED"]:
+
+                    self.logger.send(
+                        f"❌ Банк отклонил заявку\n"
+                        f"Статус {status}"
+                    )
+
+                    return
+
+                time.sleep(10)
+
+            self.logger.send(
+                "⚠️ Не удалось подтвердить статус заявки"
+            )
+
+        finally:
+
+            self.storage.release_lock()
