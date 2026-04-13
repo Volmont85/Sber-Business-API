@@ -1,5 +1,5 @@
 import httpx
-
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 class SberClient:
 
@@ -14,12 +14,11 @@ class SberClient:
             timeout=30
         )
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
     def get_token(self):
 
-        url = f"{self.base_url}/ic/sso/api/v2/oauth/token"
-
-        response = self.client.post(
-            url,
+        r = self.client.post(
+            f"{self.base_url}/ic/sso/api/v2/oauth/token",
             auth=(self.client_id, self.client_secret),
             json={
                 "grant_type": "client_credentials",
@@ -27,31 +26,27 @@ class SberClient:
             }
         )
 
-        response.raise_for_status()
+        r.raise_for_status()
 
-        return response.json()["access_token"]
+        return r.json()["access_token"]
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
     def get_balance(self, token, account):
 
-        url = f"{self.base_url}/v1/accounts/{account}/balance"
-
-        response = self.client.get(
-            url,
+        r = self.client.get(
+            f"{self.base_url}/v1/accounts/{account}/balance",
             headers={"Authorization": f"Bearer {token}"}
         )
 
-        response.raise_for_status()
+        r.raise_for_status()
 
-        data = response.json()
+        return float(r.json()["balance"])
 
-        return float(data["balance"])
-
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
     def get_interest_rate(self, token, amount):
 
-        url = f"{self.base_url}/v1/placement/interest-rate"
-
-        response = self.client.get(
-            url,
+        r = self.client.get(
+            f"{self.base_url}/v1/placement/interest-rate",
             headers={"Authorization": f"Bearer {token}"},
             params={
                 "product": "OVERNIGHT",
@@ -60,13 +55,12 @@ class SberClient:
             }
         )
 
-        response.raise_for_status()
+        r.raise_for_status()
 
-        return response.json()["interestRate"]
+        return r.json()["interestRate"]
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
     def create_deposit(self, token, amount, rate, external_id):
-
-        url = f"{self.base_url}/v2/placement/deposit/application/interest-rate"
 
         payload = {
             "externalId": external_id,
@@ -76,25 +70,34 @@ class SberClient:
             "interestRate": rate
         }
 
-        response = self.client.post(
-            url,
+        r = self.client.post(
+            f"{self.base_url}/v2/placement/deposit/application/interest-rate",
             headers={"Authorization": f"Bearer {token}"},
             json=payload
         )
 
-        response.raise_for_status()
+        r.raise_for_status()
 
-        return response.json()
+        return r.json()
 
     def get_application_state(self, token, external_id):
 
-        url = f"{self.base_url}/v1/placement/deposit/application/{external_id}/state"
-
-        response = self.client.get(
-            url,
+        r = self.client.get(
+            f"{self.base_url}/v1/placement/deposit/application/{external_id}/state",
             headers={"Authorization": f"Bearer {token}"}
         )
 
-        response.raise_for_status()
+        r.raise_for_status()
 
-        return response.json()
+        return r.json()
+
+    def get_application(self, token, external_id):
+
+        r = self.client.get(
+            f"{self.base_url}/v1/placement/deposit/application/{external_id}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+
+        r.raise_for_status()
+
+        return r.json()
