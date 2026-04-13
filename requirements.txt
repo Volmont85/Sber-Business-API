@@ -1,5 +1,0 @@
-httpx
-apscheduler
-redis
-pytz
-python-dotenv
