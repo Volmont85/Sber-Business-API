@@ -25,10 +25,9 @@ class SberClient:
 
         self.client = httpx.Client(
             base_url=self.base_url,
-            cert=(cert, key),                # mTLS сертификат клиента
-            verify=certifi.where(),          # root CA
-            timeout=timeout,
-            limits=limits,
+            cert=("/app/sandbox_cert.pem", "/app/sandbox_key.pem"),
+            verify="/app/sber_ca.pem",
+            timeout=httpx.Timeout(30.0),
             headers={
                 "Content-Type": "application/json",
                 "Accept": "application/json"
