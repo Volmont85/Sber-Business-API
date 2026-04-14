@@ -1,6 +1,8 @@
 import os
 
-print("FILES:", os.listdir("/app"))
+import config
+print("CLIENT_ID:", config.CLIENT_ID)
+print("CLIENT_SECRET:", config.CLIENT_SECRET)
 
 
 from apscheduler.schedulers.blocking import BlockingScheduler
