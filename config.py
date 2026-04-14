@@ -4,8 +4,8 @@ class Config:
 
     SBER_API = os.getenv("SBER_API")
 
-    SBER_CLIENT_ID = os.getenv("SBER_CLIENT_ID")
-    SBER_CLIENT_SECRET = os.getenv("SBER_CLIENT_SECRET")
+    CLIENT_ID = os.getenv("SBER_CLIENT_ID")
+    CLIENT_SECRET = os.getenv("SBER_CLIENT_SECRET")
 
     CERT_PATH = os.getenv("SBER_CERT")
     KEY_PATH = os.getenv("SBER_KEY")
