@@ -1,4 +1,5 @@
-httpx
+httpx[http2]
+certifi
 apscheduler
 redis
 pytz
