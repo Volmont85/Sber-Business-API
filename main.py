@@ -1,10 +1,5 @@
 import os
 
-import config
-print("CLIENT_ID:", config.CLIENT_ID)
-print("CLIENT_SECRET:", config.CLIENT_SECRET)
-
-
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from config import Config
@@ -14,6 +9,9 @@ from storage import Storage
 from telegram_logger import TelegramLogger
 
 config = Config()
+
+print("SBER_CLIENT_ID:", config.SBER_CLIENT_ID)
+print("SBER_CLIENT_SECRET:", config.SBER_CLIENT_SECRET)
 
 sber = SberClient(
     config.SBER_API,
