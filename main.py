@@ -1,3 +1,8 @@
+import os
+
+print("FILES:", os.listdir("/app"))
+print("CERT:", os.listdir("/app/cert"))
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from config import Config
