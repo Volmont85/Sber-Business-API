@@ -22,8 +22,8 @@ class Config:
 
     MOSCOW_TZ = "Europe/Moscow"
 
-    RUN_HOUR = 19
-    RUN_MINUTE = 23
+    RUN_HOUR = 20
+    RUN_MINUTE = 09
 
     CUT_OFF_HOUR = 21
     CUT_OFF_MINUTE = 40
