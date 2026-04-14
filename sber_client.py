@@ -4,7 +4,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 class SberClient:
 
-    def __init__(self, base_url, client_id, client_secret, cert, key, ca="/app/sber_ca.pem"):
+    def __init__(self, base_url, client_id, client_secret, cert, key, ca="sber_ca.pem"):
         self.base_url = base_url
         self.client_id = client_id
         self.client_secret = client_secret
