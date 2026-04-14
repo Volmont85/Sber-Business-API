@@ -11,7 +11,7 @@ class SberClient:
 
         self.client = httpx.Client(
             base_url=base_url,
-            cert=("cert/sandbox_cert.pem", "cert/sandbox_key.pem"),
+            cert=("/app/sandbox_cert.pem", "/app/sandbox_key.pem"),
             timeout=30.0
         )
 
