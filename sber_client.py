@@ -9,11 +9,11 @@ class SberClient:
         self.client_id = client_id
         self.client_secret = client_secret
 
-self.client = httpx.Client(
-    base_url=base_url,
-    cert=("cert/sandbox_cert.pem", "cert/sandbox_key.pem"),
-    timeout=30.0
-)
+        self.client = httpx.Client(
+            base_url=base_url,
+            cert=("cert/sandbox_cert.pem", "cert/sandbox_key.pem"),
+            timeout=30.0
+        )
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential())
     def get_token(self):
