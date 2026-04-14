@@ -3,6 +3,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 class SberClient:
 
+    class SberClient:
+
     def __init__(self, base_url, client_id, client_secret, cert, key, ca="/app/sber_ca.pem"):
         self.base_url = base_url
         self.client_id = client_id
@@ -13,8 +15,8 @@ class SberClient:
 
         self.client = httpx.Client(
             base_url=self.base_url,
-            cert=("sandbox_cert.pem", "sandbox_key.pem"),
-            verify="sber_ca.pem",
+            cert=(cert, key),
+            verify=ca,
             timeout=timeout,
             limits=limits,
             headers={
