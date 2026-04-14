@@ -10,8 +10,6 @@ from telegram_logger import TelegramLogger
 
 config = Config()
 
-print("CERT:", config.CERT_PATH)
-print("KEY:", config.KEY_PATH)
 
 sber = SberClient(
     config.SBER_API,
@@ -20,6 +18,9 @@ sber = SberClient(
     config.CERT_PATH,
     config.KEY_PATH
 )
+
+print("CERT:", config.CERT_PATH)
+print("KEY:", config.KEY_PATH)
 
 storage = Storage(config.REDIS_URL)
 
