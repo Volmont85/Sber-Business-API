@@ -10,8 +10,8 @@ from telegram_logger import TelegramLogger
 
 config = Config()
 
-print("SBER_CLIENT_ID:", config.CLIENT_ID)
-print("SBER_CLIENT_SECRET:", config.CLIENT_SECRET)
+print("CERT:", config.CERT_PATH)
+print("KEY:", config.KEY_PATH)
 
 sber = SberClient(
     config.SBER_API,
