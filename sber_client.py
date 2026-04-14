@@ -1,5 +1,7 @@
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+import certifi
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 
 class SberClient:
 
@@ -9,17 +11,40 @@ class SberClient:
         self.client_id = client_id
         self.client_secret = client_secret
 
-        self.client = httpx.Client(
-            base_url=base_url,
-            cert=("/app/sandbox_cert.pem", "/app/sandbox_key.pem"),
-            timeout=30.0
+        timeout = httpx.Timeout(
+            connect=10.0,
+            read=30.0,
+            write=30.0,
+            pool=30.0
         )
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
+        limits = httpx.Limits(
+            max_connections=20,
+            max_keepalive_connections=10
+        )
+
+        self.client = httpx.Client(
+            base_url=self.base_url,
+            cert=(cert, key),                # mTLS сертификат клиента
+            verify=certifi.where(),          # root CA
+            timeout=timeout,
+            limits=limits,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            http2=True
+        )
+
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=20),
+        retry=retry_if_exception_type(httpx.HTTPError)
+    )
     def get_token(self):
 
         r = self.client.post(
-            f"{self.base_url}/ic/sso/api/v2/oauth/token",
+            "/ic/sso/api/v2/oauth/token",
             auth=(self.client_id, self.client_secret),
             json={
                 "grant_type": "client_credentials",
@@ -31,11 +56,15 @@ class SberClient:
 
         return r.json()["access_token"]
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=20),
+        retry=retry_if_exception_type(httpx.HTTPError)
+    )
     def get_balance(self, token, account):
 
         r = self.client.get(
-            f"{self.base_url}/v1/accounts/{account}/balance",
+            f"/v1/accounts/{account}/balance",
             headers={"Authorization": f"Bearer {token}"}
         )
 
@@ -43,11 +72,15 @@ class SberClient:
 
         return float(r.json()["balance"])
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=20),
+        retry=retry_if_exception_type(httpx.HTTPError)
+    )
     def get_interest_rate(self, token, amount):
 
         r = self.client.get(
-            f"{self.base_url}/v1/placement/interest-rate",
+            "/v1/placement/interest-rate",
             headers={"Authorization": f"Bearer {token}"},
             params={
                 "product": "OVERNIGHT",
@@ -60,7 +93,11 @@ class SberClient:
 
         return r.json()["interestRate"]
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential())
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=20),
+        retry=retry_if_exception_type(httpx.HTTPError)
+    )
     def create_deposit(self, token, amount, rate, external_id):
 
         payload = {
@@ -72,7 +109,7 @@ class SberClient:
         }
 
         r = self.client.post(
-            f"{self.base_url}/v2/placement/deposit/application/interest-rate",
+            "/v2/placement/deposit/application/interest-rate",
             headers={"Authorization": f"Bearer {token}"},
             json=payload
         )
@@ -84,7 +121,7 @@ class SberClient:
     def get_application_state(self, token, external_id):
 
         r = self.client.get(
-            f"{self.base_url}/v1/placement/deposit/application/{external_id}/state",
+            f"/v1/placement/deposit/application/{external_id}/state",
             headers={"Authorization": f"Bearer {token}"}
         )
 
@@ -95,7 +132,7 @@ class SberClient:
     def get_application(self, token, external_id):
 
         r = self.client.get(
-            f"{self.base_url}/v1/placement/deposit/application/{external_id}",
+            f"/v1/placement/deposit/application/{external_id}",
             headers={"Authorization": f"Bearer {token}"}
         )
 
